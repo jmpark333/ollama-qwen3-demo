@@ -10,11 +10,17 @@
 ## 실행 방법
 1. Ollama 서버가 로컬에서 실행 중이어야 합니다 (예: `ollama run qwen3`)
 2. Python 패키지 설치: `pip install -r requirements.txt`
-3. 서버 실행: `uvicorn main:app --reload`
-4. 브라우저에서 `http://localhost:8000` 접속
+3. 코드 다운로드: 아래 명령어로 소스코드를 본인 PC에 복제하세요.
+git clone https://github.com/jmpark333/ollama-qwen3-demo.git
+4. cd qwen3 && pip install -r requirements.txt
+5. Ollama 설치 및 모델 다운로드: Ollama 공식 다운로드에서 설치 후, 터미널에서 "ollama pull qwen3"
+6. FastAPI 서버 실행: uvicorn main:app --host 0.0.0.0 --port 10000
+7. 웹 브라우저에서 접속: http://localhost:10000 으로 접속하여 데모 사용
+(질문 클릭 시 Ollama가 답변을 생성합니다)
+※ 본 데모는 각 사용자가 직접 자신의 PC에서 실행해야 정상 동작합니다.
+(외부에서 접속하거나 서버에 배포된 버전에서는 Ollama 연결이 되지 않습니다)
 
 ## 참고
 - Ollama Qwen3 엔드포인트: http://localhost:11434/v1/
-- 데모 스타일 참고: https://gemini-flash-inference-demo.windsurf.build/
 
 (2025-05-01 07:58:39)
