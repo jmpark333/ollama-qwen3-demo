@@ -3,7 +3,7 @@
 이 프로젝트는 Ollama Qwen3 모델을 이용해 주어진 수학/논리 문제에 대한 AI 답변을 저장하고, 웹에서 한눈에 볼 수 있도록 하는 데모입니다.
 
 ## 주요 기능
-- Ollama Qwen3 API 연동 및 답변 자동 저장
+- Ollama Qwen3 API 연동
 - 문제/답변을 카드 형태로 보여주는 웹 UI
 - FastAPI 기반 서버, Jinja2 템플릿 사용
 
