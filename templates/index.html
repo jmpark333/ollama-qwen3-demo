@@ -86,7 +86,106 @@
             <div class="answer">(문제 클릭해서 답변 확인)</div>
         </div>
         {% endfor %}
+        <!-- (2025-05-02 06:50:57) 수학문제 유형+본문 모두 표시하도록 동적 렌더링 코드 수정 -->
+        <h2 style="margin-top:40px;color:#1976d2;text-align:center;">수학문제 테스트 데모</h2>
+        <div id="math-qa-list">
+            <!-- 수학문제 카드가 JS로 동적 생성됨 -->
+        </div>
     </div>
     <script src="/static/main.js"></script>
+    <script>
+    // (2025-05-02 07:39:30) 수학문제 답변 표시도 추론문제와 동일하게 renderFinalContent 사용
+    document.addEventListener("DOMContentLoaded", function() {
+        // renderFinalContent 함수 정의 - main.js의 함수와 동일하게 구현
+        function renderFinalContent(answerDiv, rawText) {
+            let thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/);
+            let thinkHtml = '', answerText = rawText;
+            if (thinkMatch) {
+                let thinkText = thinkMatch[1].trim();
+                if (typeof marked !== 'undefined') {
+                    thinkHtml = marked.parse(thinkText);
+                } else {
+                    thinkHtml = thinkText.replace(/\n/g, '<br>');
+                }
+                answerText = rawText.replace(thinkMatch[0], '');
+            }
+            answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
+            answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
+            if (typeof marked !== 'undefined') {
+                answerText = marked.parse(answerText.trim());
+            }
+            let html = '';
+            if (thinkHtml) {
+                html += `<details class="think-block"><summary>생각 과정 보기</summary><div class="think-inner">${thinkHtml}</div></details>`;
+            }
+            html += answerText;
+            answerDiv.innerHTML = html;
+            if (window.MathJax && window.MathJax.typeset) {
+                window.MathJax.typeset([answerDiv]);
+            }
+        }
+        
+        // renderFinalContent를 window에 노출
+        window.renderFinalContent = renderFinalContent;
+        
+        fetch("/api/math_qa_detail")
+            .then(res => res.json())
+            .then(list => {
+                const mathQaList = document.getElementById("math-qa-list");
+                if (!mathQaList) return;
+                list.forEach((item, idx) => {
+                    const card = document.createElement("div");
+                    card.className = "qa-card math-qa-card";
+                    card.innerHTML = `<div class='question' data-math-idx='${idx}'><b>${item.type}</b><br><span style='color:#333;font-weight:normal;'>${item.question}</span></div><div class='answer'></div>`;
+                    mathQaList.appendChild(card);
+                });
+                // 수학문제 카드 클릭 이벤트 추가
+                const mathCards = document.querySelectorAll(".math-qa-card .question");
+                mathCards.forEach(function(qDiv, idx) {
+                    qDiv.style.cursor = "pointer";
+                    qDiv.title = "클릭해서 답변 확인";
+                    qDiv.addEventListener("click", function() {
+                        if (window.currentMathEventSource) {
+                            window.currentMathEventSource.close();
+                        }
+                        const answerDiv = qDiv.parentElement.querySelector(".answer");
+                        answerDiv.innerHTML = '<span style="color:#888;">답변 스트리밍 시작...</span>';
+                        answerDiv.classList.add('answer-streaming');
+                        let fullContent = "";
+                        const url = `/api/math_answer?idx=${idx}`;
+                        const eventSource = new EventSource(url);
+                        window.currentMathEventSource = eventSource;
+                        eventSource.onopen = function() { answerDiv.innerHTML = ''; };
+                        eventSource.onmessage = function(event) {
+                            const data = event.data;
+                            if (data === "[STREAM_START]") { fullContent = ""; answerDiv.innerHTML = ''; return; }
+                            if (data === "[DONE]") { eventSource.close(); window.currentMathEventSource = null; answerDiv.classList.remove('answer-streaming'); window.renderFinalContent(answerDiv, fullContent); return; }
+                            if (data.startsWith("[HTTP 오류]") || data.startsWith("[예외]") || data.startsWith("[처리 오류]") || data.startsWith("[오류]")) {
+                                answerDiv.innerHTML = `<span style='color:red;'>${data}</span>`;
+                                eventSource.close(); window.currentMathEventSource = null; answerDiv.classList.remove('answer-streaming'); return;
+                            }
+                            let rawData = event.data;
+                            const dataPrefix = "data: ";
+                            if (rawData.startsWith(dataPrefix)) { rawData = rawData.substring(dataPrefix.length).trim(); }
+                            fullContent += rawData;
+                            // (2025-05-02 07:26:15) 스트리밍 중에도 HTML 이스케이프 처리 및 줄바꿈 변환 추가
+                            const tempHtml = fullContent
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;")
+                                .replace(/\n/g, '<br>');
+                            answerDiv.innerHTML = tempHtml;
+                        };
+                        eventSource.onerror = function(error) {
+                            answerDiv.innerHTML = '<span style="color:red;">[오류] EventSource 연결 실패</span>';
+                            eventSource.close(); window.currentMathEventSource = null; answerDiv.classList.remove('answer-streaming');
+                        };
+                    });
+                });
+            });
+    });
+    </script>
 </body>
 </html>
