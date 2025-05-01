@@ -2,3 +2,4 @@ fastapi
 uvicorn
 httpx
 jinja2
+python-multipart  # 2025-05-01 16:00:15 python-multipart 추가 (FastAPI Form 처리를 위해, Render 배포 오류 해결)
