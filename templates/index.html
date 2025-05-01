@@ -57,13 +57,28 @@
         <div class="ollama-guide" style="background:#fffbe6;border:1px solid #ffe58f;padding:16px 18px;border-radius:10px;margin-bottom:18px;color:#ad8b00;font-size:1.05em;">
             <b>이 페이지를 사용하려면 아래 안내를 따라주세요:</b><br>
             <ol style="margin:8px 0 0 20px;padding:0;">
-                <li><b>Ollama</b>를 <a href="https://ollama.com/download" target="_blank">여기에서 다운로드/설치</a> 하세요.</li>
-                <li>터미널(명령 프롬프트)에서 아래 명령어를 실행해 <b>Qwen3</b> 모델을 다운로드 및 실행하세요:<br>
-                    <code style="background:#f7f7f7;padding:2px 6px;border-radius:5px;display:inline-block;">ollama run qwen3</code>
+                <li><b>코드 다운로드:</b> <span style="color:#1677ff;font-weight:bold;">아래 명령어로 소스코드를 본인 PC에 복제하세요.</span><br>
+                    <code style="display:block;margin:6px 0 8px 0;padding:6px 10px;background:#f2f4f8;border-radius:6px;">git clone https://github.com/jmpark333/ollama-qwen3-demo.git</code>
                 </li>
-                <li>Ollama 서버가 정상 동작 중이면, 이 페이지에서 바로 Qwen3 문제풀이 AI를 체험할 수 있습니다.</li>
+                <li><b>Python 환경 준비:</b> <span style="color:#1677ff;">(Python 3.8 이상 권장)</span><br>
+                    <code>cd qwen3 && pip install -r requirements.txt</code>
+                </li>
+                <li><b>Ollama 설치 및 모델 다운로드:</b><br>
+                    <a href="https://ollama.com/download" target="_blank">Ollama 공식 다운로드</a>에서 설치 후, 터미널에서<br>
+                    <code>ollama pull qwen3</code>
+                </li>
+                <li><b>FastAPI 서버 실행:</b><br>
+                    <code>uvicorn main:app --host 0.0.0.0 --port 10000</code>
+                </li>
+                <li><b>웹 브라우저에서 접속:</b><br>
+                    <code>http://localhost:10000</code> 으로 접속하여 데모 사용<br>
+                    <span style="color:#1677ff;">(질문 클릭 시 Ollama가 답변을 생성합니다)</span>
+                </li>
             </ol>
-            <span style="font-size:0.97em;color:#888;">(로컬 PC에서 Ollama 서버가 반드시 실행 중이어야 정상 동작합니다.)</span>
+            <div style="margin-top:10px;color:#e57373;font-weight:bold;">
+                ※ <b>본 데모는 각 사용자가 직접 자신의 PC에서 실행해야 정상 동작합니다.</b><br>
+                (외부에서 접속하거나 서버에 배포된 버전에서는 Ollama 연결이 되지 않습니다)
+            </div>
         </div>
         {% for q in questions %}
         <div class="qa-card">

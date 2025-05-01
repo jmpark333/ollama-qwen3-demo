@@ -14,41 +14,85 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             const answerDiv = card.querySelector(".answer");
             answerDiv.innerHTML = '<span style="color:#888;">답변 스트리밍 시작...</span>';
-
-            // Ollama endpoint 동적 fetch (2025-05-01 16:13:30)
-            const questionText = qDiv.innerText.replace(/^Q\d+\.\s*/, "");
             answerDiv.classList.add('answer-streaming');
             let fullContent = "";
+            let thinkingContent = "";
+            let isThinking = false;
 
-            // fetchAnswerStream: 브라우저에서 직접 Ollama로 요청
-            fetchAnswerStream(
-                questionText,
-                function(chunk) {
-                    fullContent += chunk;
-                    answerDiv.innerHTML = `<span style=\"color:#888;\">스트리밍 중...</span><br>${fullContent}`;
-                },
-                function(err) {
-                    answerDiv.innerHTML = `<span style=\"color:red;\">[오류] Ollama 서버 연결 실패: ${err.message}</span>`;
+            // 서버 프록시 API로 EventSource 연결 (원상복구)
+            const url = `/api/answer?idx=${idx}`;
+            const eventSource = new EventSource(url);
+            currentEventSource = eventSource;
+            console.log(`EventSource created for question ${idx}: ${url}`);
+
+            eventSource.onopen = function() {
+                console.log(`EventSource connection opened for question ${idx}.`);
+                answerDiv.innerHTML = '';
+            };
+            eventSource.onmessage = function(event) {
+                const data = event.data;
+                console.log("Received data:", data);
+                if (data === "[STREAM_START]") {
+                    console.log("Stream started.");
+                    fullContent = "";
+                    answerDiv.innerHTML = '';
+                    return;
                 }
-            ).then(() => {
-                renderFinalContent(answerDiv, fullContent);
-            });
+                if (data === "[DONE]") {
+                    console.log("Stream finished.");
+                    eventSource.close();
+                    currentEventSource = null;
+                    answerDiv.classList.remove('answer-streaming');
+                    renderFinalContent(answerDiv, fullContent);
+                    return;
+                }
+                if (data.startsWith("[HTTP 오류]") || data.startsWith("[예외]") || data.startsWith("[처리 오류]") || data.startsWith("[오류]")) {
+                    answerDiv.innerHTML = `<span style="color:red;">${data}</span>`;
+                    eventSource.close();
+                    currentEventSource = null;
+                    answerDiv.classList.remove('answer-streaming');
+                    return;
+                }
+                try {
+                    let rawData = event.data;
+                    const dataPrefix = "data: ";
+                    if (rawData.startsWith(dataPrefix)) {
+                        rawData = rawData.substring(dataPrefix.length).trim();
+                    }
+                    if (!rawData) {
+                        console.warn("Ignoring empty data after prefix removal.");
+                        return;
+                    }
+                    fullContent += rawData;
+                    const tempHtml = fullContent
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;")
+                        .replace(/\n/g, '<br>');
+                    answerDiv.innerHTML = tempHtml;
+                } catch (e) {
+                    console.error("스트림 데이터 처리 오류:", e);
+                    answerDiv.innerHTML = `<span style="color:red;">[오류] 데이터 처리 오류: ${e.message}</span>`;
+                    return;
+                }
+            };
+            eventSource.onerror = function(error) {
+                console.error("EventSource error:", error);
+                answerDiv.innerHTML = `<span style=\"color:red;\">[오류] 스트리밍 중 오류가 발생했습니다: ${error.message}</span>`;
+                eventSource.close();
+                currentEventSource = null;
+                answerDiv.classList.remove('answer-streaming');
+            };
         });
     });
 
-    // Ollama endpoint 입력란에서 주소 가져오기 (2025-05-01 16:13:30)
-    function getOllamaEndpoint() {
-        const input = document.getElementById('ollama-endpoint');
-        return input ? input.value : 'http://localhost:11434';
-    }
-
-    // 스트림 종료 후 최종 내용을 렌더링하는 함수
     function renderFinalContent(answerDiv, rawText) {
         let thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/);
         let thinkHtml = '', answerText = rawText;
         if (thinkMatch) {
             let thinkText = thinkMatch[1].trim();
-            // 2025-05-01 15:02:40 생각과정에는 줄바꿈 규칙 미적용, 본문만 적용
             if (typeof marked !== 'undefined') {
                 thinkHtml = marked.parse(thinkText);
             } else {
@@ -56,7 +100,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             answerText = rawText.replace(thinkMatch[0], '');
         }
-        // 본문(정답 등)만 줄바꿈 규칙 적용
         answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
         answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
         if (typeof marked !== 'undefined') {
@@ -68,7 +111,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         html += answerText;
         answerDiv.innerHTML = html;
-        // MathJax 수식 렌더링 트리거
         if (window.MathJax && window.MathJax.typeset) {
             window.MathJax.typeset([answerDiv]);
         }
