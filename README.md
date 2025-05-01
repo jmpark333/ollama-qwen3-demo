@@ -22,4 +22,11 @@ git clone https://github.com/jmpark333/ollama-qwen3-demo.git
 ## 참고
 - Ollama Qwen3 엔드포인트: http://localhost:11434/v1/
 
+## 변경 이력
+
+- 2025-05-02
+    - 수학문제 답변도 추론문제와 동일하게 **think 태그 접힘(생각 과정 보기)**, **마크다운 변환**, **수식(MathJax) 표시**가 적용되도록 개선
+    - 스트리밍 중에도 줄바꿈/HTML 이스케이프 처리 일관성 유지
+    - 관련 코드: templates/index.html, main.py
+
 (2025-05-01 07:58:39)
