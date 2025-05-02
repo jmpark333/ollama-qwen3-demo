@@ -1,40 +1,50 @@
-<!-- index.html (2025-05-01 08:01:12) Ollama Qwen3 Demo -->
+<!-- index.html (2025-05-02 08:37:00) Ollama Qwen3 Demo -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Ollama Qwen3:8B 추론 테스트 데모</title> <!-- 2025-05-01 13:57:40 제목 변경 -->
+    <title>Ollama Qwen3:8B 추론 테스트 데모</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- (2025-05-01 11:56:10) 마크다운 처리를 위한 marked.js 라이브러리 추가 -->
+    <!-- 마크다운 처리를 위한 marked.js 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- 2025-05-01 14:55:00 MathJax CDN 추가 (LaTeX 수식, boxed 등 렌더링 지원) -->
-    <!-- 2025-05-01 15:05:40 MathJax 인라인 수식($...$) 활성화 설정 추가 -->
+    
+    <!-- (2025-05-02 12:20:45) MathJax 라이브러리 추가 -->
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
     <script>
       window.MathJax = {
-        options: {
-          ignoreHtmlClass: "no-mathjax", // 이 클래스를 가진 요소는 MathJax 변환 제외 (2025-05-01 15:34:00)
-          processHtmlClass: "mathjax"
-        },
         tex: {
           inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          tags: 'ams'
         },
-        svg: { fontCache: 'global' }
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+          ignoreHtmlClass: 'tex2jax_ignore',
+          processHtmlClass: 'tex2jax_process'
+        }
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- KaTeX 라이브러리 추가 (2025-05-02 08:37:00) - MathJax 대신 KaTeX 사용 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background: #f7f8fa; margin: 0; }
         .container { max-width: 900px; margin: 40px auto; padding: 24px; background: #fff; border-radius: 16px; box-shadow: 0 2px 16px #0001; }
         h1 { text-align: center; color: #1a237e; }
         .qa-card { background: #e3eafc; border-radius: 12px; margin: 24px 0; padding: 20px 28px; box-shadow: 0 1px 4px #0002; }
-        .question { font-weight: bold; color: #0d47a1; margin-bottom: 10px; white-space: pre-line; } /* 2025-05-01 15:30:00 줄바꿈·달러 정상 표시 */
+        .question { font-weight: bold; color: #0d47a1; margin-bottom: 10px; white-space: pre-line; }
         .answer { color: #222; white-space: pre-line; margin-top: 8px; }
         @media (max-width: 600px) {
             .container { padding: 8px; }
             .qa-card { padding: 12px 8px; }
         }
-        /* (2025-05-01 13:14:48) 마크다운 스타일 개선 - 줄 간격 축소 */
         .markdown strong { font-weight: bold; color: #0d47a1; }
         .markdown em { font-style: italic; color: #1976d2; }
         .markdown code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
@@ -44,6 +54,7 @@
         .markdown ul, .markdown ol { margin: 0.2em 0; padding-left: 1.5em; }
         .markdown li { margin: 0.1em 0; }
         .thinking { background-color:#f0f7ff; padding:6px; border-left:3px solid #1976d2; margin:4px 0; white-space:pre-line; font-size:0.95em; color: #444; display: block !important; }
+        .math-display, .math-inline { color: #0d47a1; }
     </style>
 </head>
 <body>
@@ -82,11 +93,11 @@
         </div>
         {% for q in questions %}
         <div class="qa-card">
-            <div class="question no-mathjax">Q{{ loop.index }}. {{ q | e }}</div>
+            <div class="question">Q{{ loop.index }}. {{ q | e }}</div>
             <div class="answer">(문제 클릭해서 답변 확인)</div>
         </div>
         {% endfor %}
-        <!-- (2025-05-02 06:50:57) 수학문제 유형+본문 모두 표시하도록 동적 렌더링 코드 수정 -->
+        
         <h2 style="margin-top:40px;color:#1976d2;text-align:center;">수학문제 테스트 데모</h2>
         <div id="math-qa-list">
             <!-- 수학문제 카드가 JS로 동적 생성됨 -->
@@ -94,9 +105,33 @@
     </div>
     <script src="/static/main.js"></script>
     <script>
-    // (2025-05-02 07:39:30) 수학문제 답변 표시도 추론문제와 동일하게 renderFinalContent 사용
     document.addEventListener("DOMContentLoaded", function() {
-        // renderFinalContent 함수 정의 - main.js의 함수와 동일하게 구현
+        // KaTeX 렌더링 함수
+        function renderMathWithKaTeX(element) {
+            element.querySelectorAll('.math-inline, .math-display').forEach(function(el) {
+                renderMathInElement(el, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false,
+                    trust: true,
+                    macros: {
+                        "\\fac": "\\operatorname{fac}",
+                        "\\quad": "\\operatorname{quad}",
+                        "\\R": "\\mathbb{R}",
+                        "\\N": "\\mathbb{N}",
+                        "\\Z": "\\mathbb{Z}",
+                        "\\Q": "\\mathbb{Q}",
+                        "\\C": "\\mathbb{C}",
+                        "\\boxed": "\\fbox"
+                    },
+                    ignoredTags: []
+                });
+            });
+        }
+        
+        // renderFinalContent 함수 정의
         function renderFinalContent(answerDiv, rawText) {
             let thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/);
             let thinkHtml = '', answerText = rawText;
@@ -111,17 +146,53 @@
             }
             answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
             answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
+            
+            // [2025-05-02 10:54:12] 정답 박스 패턴을 모두 \\boxed{}로 자동 변환 (후처리)
+            answerText = answerText
+                // \box{...} 또는 box{...} → \\boxed{...}
+                .replace(/\\box\s*{([^}]+)}/g, '\\boxed{$1}')
+                .replace(/box\s*{([^}]+)}/gi, '\\boxed{$1}')
+                // [숫자] 또는 [소수] → \\boxed{...}
+                .replace(/\[(\d+\.?\d*)\]/g, '\\boxed{$1}')
+                // 정답: {...} 또는 정답：{...} → \\boxed{...}
+                .replace(/정답[\s:：]*{([^}]+)}/g, '\\boxed{$1}');
+            
+            // [2025-05-02 11:52:55] 더 강력한 수식 패턴 치환 적용 (줄바꿈/공백/여러 줄 포함)
+            answerText = answerText
+                // $$ ... $$ (여러 줄 포함)
+                .replace(/\$\$([\s\S]+?)\$\$/g, '[[DISPLAY_MATH::$1::DISPLAY_MATH]]')
+                // $ ... $ (줄바꿈/공백 포함, 단일 줄)
+                .replace(/\$\s*([^$\n]+?)\s*\$/g, '[[INLINE_MATH::$1::INLINE_MATH]]');
+
+            // 마크다운 변환
             if (typeof marked !== 'undefined') {
                 answerText = marked.parse(answerText.trim());
             }
+
+            // 마크다운 변환 후, 임시 토큰을 HTML-safe 태그로 복원
+            answerText = answerText
+                .replace(/\[\[DISPLAY_MATH::([\s\S]+?)::DISPLAY_MATH\]\]/g, '$$$1$$')
+                .replace(/\[\[INLINE_MATH::([\s\S]+?)::INLINE_MATH\]\]/g, '$$$1$');
+            
+            // [2025-05-02 12:00:52] 마크다운 변환 후, $...$, $$...$$를 강제 span/div로 변환하여 어떤 구조에서도 수식이 반드시 렌더링되게 처리
+            answerText = answerText
+                // $$ ... $$ (여러 줄 포함, 공백/줄바꿈 포함)
+                .replace(/\$\$([\s\S]+?)\$\$/g, '<div class="math-display">$$$1$$</div>')
+                // $ ... $ (공백, 줄바꿈 포함)
+                .replace(/\$\s*([^$\n]+?)\s*\$/g, '<span class="math-inline">$$$1$</span>');
+            
             let html = '';
             if (thinkHtml) {
                 html += `<details class="think-block"><summary>생각 과정 보기</summary><div class="think-inner">${thinkHtml}</div></details>`;
             }
             html += answerText;
             answerDiv.innerHTML = html;
-            if (window.MathJax && window.MathJax.typeset) {
-                window.MathJax.typeset([answerDiv]);
+            
+            // KaTeX 렌더링
+            try {
+                renderMathWithKaTeX(answerDiv);
+            } catch (e) {
+                console.error('KaTeX 렌더링 오류:', e);
             }
         }
         
@@ -168,15 +239,17 @@
                             const dataPrefix = "data: ";
                             if (rawData.startsWith(dataPrefix)) { rawData = rawData.substring(dataPrefix.length).trim(); }
                             fullContent += rawData;
-                            // (2025-05-02 07:26:15) 스트리밍 중에도 HTML 이스케이프 처리 및 줄바꿈 변환 추가
-                            const tempHtml = fullContent
+                            
+                            // HTML 이스케이프 처리 및 줄바꿈 변환
+                            let processedContent = fullContent
                                 .replace(/&/g, "&amp;")
                                 .replace(/</g, "&lt;")
                                 .replace(/>/g, "&gt;")
                                 .replace(/"/g, "&quot;")
                                 .replace(/'/g, "&#039;")
                                 .replace(/\n/g, '<br>');
-                            answerDiv.innerHTML = tempHtml;
+                            
+                            answerDiv.innerHTML = processedContent;
                         };
                         eventSource.onerror = function(error) {
                             answerDiv.innerHTML = '<span style="color:red;">[오류] EventSource 연결 실패</span>';

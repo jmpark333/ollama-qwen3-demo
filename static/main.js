@@ -102,17 +102,57 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
         answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
+        
+        // (2025-05-02 12:21:15) LaTeX 수식 보존 처리
+        // 마크다운 변환 전에 수식을 임시 토큰으로 보존
+        let mathTokens = [];
+        
+        // 디스플레이 수식 보존 ($$...$$)
+        answerText = answerText.replace(/\$\$([\s\S]+?)\$\$/g, function(match, p1) {
+            const token = `__MATH_DISPLAY_${mathTokens.length}__`;
+            mathTokens.push({type: 'display', content: p1.trim()});
+            return token;
+        });
+        
+        // 인라인 수식 보존 ($...$)
+        answerText = answerText.replace(/\$([^$\n]+?)\$/g, function(match, p1) {
+            const token = `__MATH_INLINE_${mathTokens.length}__`;
+            mathTokens.push({type: 'inline', content: p1.trim()});
+            return token;
+        });
+        
         if (typeof marked !== 'undefined') {
             answerText = marked.parse(answerText.trim());
         }
+        
+        // 마크다운 변환 후 수식 토큰을 원래 LaTeX로 복원
+        mathTokens.forEach((token, index) => {
+            const displayToken = `__MATH_DISPLAY_${index}__`;
+            const inlineToken = `__MATH_INLINE_${index}__`;
+            
+            if (token.type === 'display') {
+                answerText = answerText.replace(displayToken, `$$${token.content}$$`);
+            } else {
+                answerText = answerText.replace(inlineToken, `$${token.content}$`);
+            }
+        });
+        
         let html = '';
         if (thinkHtml) {
             html += `<details class=\"think-block\"><summary>생각 과정 보기</summary><div class=\"think-inner\">${thinkHtml}</div></details>`;
         }
         html += answerText;
         answerDiv.innerHTML = html;
-        if (window.MathJax && window.MathJax.typeset) {
-            window.MathJax.typeset([answerDiv]);
+        
+        // (2025-05-02 12:21:15) MathJax 렌더링 적용
+        if (window.MathJax) {
+            try {
+                window.MathJax.typesetPromise([answerDiv]).catch(err => {
+                    console.error('MathJax 렌더링 오류:', err);
+                });
+            } catch (e) {
+                console.error('MathJax 처리 중 오류:', e);
+            }
         }
     }
 });
