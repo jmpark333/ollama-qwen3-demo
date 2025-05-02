@@ -1,3 +1,4 @@
+
 # main.py
 # Ollama Qwen3 API와 연동하여 문제-답변 저장 및 제공 (2025-05-01 07:58:39)
 from fastapi import FastAPI, Request, Form
@@ -44,72 +45,7 @@ SYSTEM_PROMPT = (
     "이 규칙을 반드시 지키세요."
 )
 
-# (2025-05-02 12:06:15) 수식 표현 후처리 함수 추가
-def process_math_expressions(text):
-    """
-    수식 표현을 후처리하여 올바르게 표시되도록 변환합니다.
-    """
-    if not text:
-        return text
-    
-    # (2025-05-02 14:25:15) LaTeX 수식 처리 방식 단순화
-    # 백슬래시 명령어 이스케이프 처리
-    
-    # 특수 LaTeX 명령어 처리
-    replacements = {
-        r'\times': '\\times',
-        r'\cdot': '\\cdot',
-        r'\tag': '\\tag',
-        r'\quad': '\\quad',
-        r'\boxed': '\\boxed',
-        r'\Rightarrow': '\\Rightarrow',
-        r'\Leftarrow': '\\Leftarrow',
-        r'\rightarrow': '\\rightarrow',
-        r'\leftarrow': '\\leftarrow',
-        r'\therefore': '\\therefore',
-        r'\because': '\\because',
-        r'\forall': '\\forall',
-        r'\exists': '\\exists',
-        r'\in': '\\in',
-        r'\subset': '\\subset',
-        r'\supset': '\\supset',
-        r'\cup': '\\cup',
-        r'\cap': '\\cap',
-        r'\emptyset': '\\emptyset',
-        r'\infty': '\\infty',
-        r'\partial': '\\partial',
-        r'\nabla': '\\nabla',
-        r'\alpha': '\\alpha',
-        r'\beta': '\\beta',
-        r'\gamma': '\\gamma',
-        r'\delta': '\\delta',
-        r'\epsilon': '\\epsilon',
-        r'\zeta': '\\zeta',
-        r'\eta': '\\eta',
-        r'\theta': '\\theta',
-        r'\iota': '\\iota',
-        r'\kappa': '\\kappa',
-        r'\lambda': '\\lambda',
-        r'\mu': '\\mu',
-        r'\nu': '\\nu',
-        r'\xi': '\\xi',
-        r'\pi': '\\pi',
-        r'\rho': '\\rho',
-        r'\sigma': '\\sigma',
-        r'\tau': '\\tau',
-        r'\upsilon': '\\upsilon',
-        r'\phi': '\\phi',
-        r'\chi': '\\chi',
-        r'\psi': '\\psi',
-        r'\omega': '\\omega',
-    }
-    
-    # 수식 명령어 이스케이프 처리
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    
-    return text
-
+# (2025-05-02 14:33:00) 수식 후처리 함수 제거 (클라이언트 MathJax에서 직접 처리)
 async def fetch_answer(question):
     try:
         async with httpx.AsyncClient() as client:
@@ -129,10 +65,9 @@ async def fetch_answer(question):
                 print(f"[응답 데이터] {str(data)[:100]}...")
                 if "choices" in data and data["choices"]:
                     content = data["choices"][0]["message"]["content"]
-                    # (2025-05-02 12:06:15) 수식 표현 후처리 적용
-                    processed_content = process_math_expressions(content)
-                    print(f"[응답 내용] {processed_content[:100]}...")
-                    return processed_content
+                    # (2025-05-02 14:33:00) 수식 후처리 제거
+                    print(f"[응답 내용] {content[:100]}...")
+                    return content
                 else:
                     return f"API 응답 구조 오류: {data}"
             except Exception as e:
@@ -178,10 +113,9 @@ async def fetch_answer_stream(question):
                                     delta = data["choices"][0].get("delta", {})
                                     content_chunk = delta.get("content")
                                     if content_chunk:
-                                        # (2025-05-02 12:06:15) 수식 표현 후처리 적용
-                                        processed_chunk = process_math_expressions(content_chunk)
-                                        print(f"[스트림 전송] chunk: {processed_chunk}")
-                                        yield f"data: {processed_chunk}\n\n".encode('utf-8')
+                                        # (2025-05-02 14:33:00) 수식 후처리 제거
+                                        print(f"[스트림 전송] chunk: {content_chunk}")
+                                        yield f"data: {content_chunk}\n\n".encode('utf-8')
                                         await asyncio.sleep(0.01)
                                 if data.get("done") or (data.get("choices") and data["choices"][0].get("finish_reason") == "stop"):
                                     break

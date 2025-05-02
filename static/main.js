@@ -103,53 +103,24 @@ document.addEventListener("DOMContentLoaded", function() {
         answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
         answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
         
-        // (2025-05-02 14:24:15) LaTeX 수식 처리 방식 개선
-        // 마크다운 변환 전에 수식을 임시 토큰으로 보존
-        const mathTokens = [];
-        
-        // 디스플레이 수식 보존 ($$...$$)
-        answerText = answerText.replace(/\$\$([\s\S]+?)\$\$/g, function(match, p1) {
-            const token = `__MATH_DISPLAY_${mathTokens.length}__`;
-            mathTokens.push({type: 'display', content: p1.trim()});
-            return token;
-        });
-        
-        // 인라인 수식 보존 ($...$)
-        answerText = answerText.replace(/\$([^$\n]+?)\$/g, function(match, p1) {
-            const token = `__MATH_INLINE_${mathTokens.length}__`;
-            mathTokens.push({type: 'inline', content: p1.trim()});
-            return token;
-        });
+        // (2025-05-02 14:34:00) LaTeX 수식 처리 단순화: 마크다운 변환 후 MathJax 직접 호출
         
         // 마크다운 변환
         if (typeof marked !== 'undefined') {
             answerText = marked.parse(answerText.trim());
+        } else {
+            // marked가 없으면 기본적인 HTML 변환 (예: 줄바꿈)
+            answerText = answerText.trim().replace(/\n/g, '<br>');
         }
-        
-        // 마크다운 변환 후 수식 토큰을 원래 LaTeX로 복원
-        mathTokens.forEach((token, index) => {
-            if (token.type === 'display') {
-                const displayToken = `__MATH_DISPLAY_${index}__`;
-                // 디스플레이 수식은 중앙 정렬 및 여백 추가
-                answerText = answerText.replace(
-                    displayToken, 
-                    `<div style="text-align:center;margin:10px 0;overflow-x:auto;">$$${token.content}$$</div>`
-                );
-            } else {
-                const inlineToken = `__MATH_INLINE_${index}__`;
-                // 인라인 수식은 그대로 복원
-                answerText = answerText.replace(inlineToken, `$${token.content}$`);
-            }
-        });
         
         let html = '';
         if (thinkHtml) {
             html += `<details class="think-block"><summary>생각 과정 보기</summary><div class="think-inner">${thinkHtml}</div></details>`;
         }
         html += answerText;
-        answerDiv.innerHTML = html;
+        answerDiv.innerHTML = html; // 마크다운 변환된 HTML 삽입
         
-        // (2025-05-02 14:24:15) MathJax 렌더링 개선
+        // MathJax 렌더링: 마크다운 변환 후 전체 answerDiv에 대해 실행
         if (window.MathJax) {
             try {
                 // 수식 렌더링 시도
@@ -159,18 +130,25 @@ document.addEventListener("DOMContentLoaded", function() {
                     })
                     .catch(err => {
                         console.error('MathJax 렌더링 오류:', err);
+                        // 오류 발생 시 fallback 시도
+                        setTimeout(() => {
+                            try {
+                                window.MathJax.typeset([answerDiv]);
+                            } catch (e2) {
+                                console.error('MathJax fallback 처리 중 오류:', e2);
+                            }
+                        }, 100); // 짧은 지연 후 fallback
                     });
             } catch (e) {
                 console.error('MathJax 처리 중 오류:', e);
-                
-                // 오류 발생 시 fallback 처리
-                setTimeout(() => {
+                 // 오류 발생 시 fallback 시도
+                 setTimeout(() => {
                     try {
                         window.MathJax.typeset([answerDiv]);
                     } catch (e2) {
                         console.error('MathJax fallback 처리 중 오류:', e2);
                     }
-                }, 500);
+                }, 100); // 짧은 지연 후 fallback
             }
         }
     }
