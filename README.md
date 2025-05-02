@@ -25,8 +25,9 @@ git clone https://github.com/jmpark333/ollama-qwen3-demo.git
 ## 변경 이력
 
 - 2025-05-02
+    - (2025-05-02 12:29:45) LaTeX 수식 표현 렌더링 개선 - MathJax 라이브러리 추가 및 수식 처리 로직 개선
     - 수학문제 답변도 추론문제와 동일하게 **think 태그 접힘(생각 과정 보기)**, **마크다운 변환**, **수식(MathJax) 표시**가 적용되도록 개선
     - 스트리밍 중에도 줄바꿈/HTML 이스케이프 처리 일관성 유지
-    - 관련 코드: templates/index.html, main.py
+    - 관련 코드: templates/index.html, main.py, static/main.js
 
 (2025-05-01 07:58:39)
