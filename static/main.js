@@ -103,9 +103,9 @@ document.addEventListener("DOMContentLoaded", function() {
         answerText = answerText.replace(/(\*\*?정답:?\*\*?)/g, '\n$1');
         answerText = answerText.replace(/(\d+\.\s)/g, '\n$1');
         
-        // (2025-05-02 12:21:15) LaTeX 수식 보존 처리
+        // (2025-05-02 14:24:15) LaTeX 수식 처리 방식 개선
         // 마크다운 변환 전에 수식을 임시 토큰으로 보존
-        let mathTokens = [];
+        const mathTokens = [];
         
         // 디스플레이 수식 보존 ($$...$$)
         answerText = answerText.replace(/\$\$([\s\S]+?)\$\$/g, function(match, p1) {
@@ -121,37 +121,56 @@ document.addEventListener("DOMContentLoaded", function() {
             return token;
         });
         
+        // 마크다운 변환
         if (typeof marked !== 'undefined') {
             answerText = marked.parse(answerText.trim());
         }
         
         // 마크다운 변환 후 수식 토큰을 원래 LaTeX로 복원
         mathTokens.forEach((token, index) => {
-            const displayToken = `__MATH_DISPLAY_${index}__`;
-            const inlineToken = `__MATH_INLINE_${index}__`;
-            
             if (token.type === 'display') {
-                answerText = answerText.replace(displayToken, `$$${token.content}$$`);
+                const displayToken = `__MATH_DISPLAY_${index}__`;
+                // 디스플레이 수식은 중앙 정렬 및 여백 추가
+                answerText = answerText.replace(
+                    displayToken, 
+                    `<div style="text-align:center;margin:10px 0;overflow-x:auto;">$$${token.content}$$</div>`
+                );
             } else {
+                const inlineToken = `__MATH_INLINE_${index}__`;
+                // 인라인 수식은 그대로 복원
                 answerText = answerText.replace(inlineToken, `$${token.content}$`);
             }
         });
         
         let html = '';
         if (thinkHtml) {
-            html += `<details class=\"think-block\"><summary>생각 과정 보기</summary><div class=\"think-inner\">${thinkHtml}</div></details>`;
+            html += `<details class="think-block"><summary>생각 과정 보기</summary><div class="think-inner">${thinkHtml}</div></details>`;
         }
         html += answerText;
         answerDiv.innerHTML = html;
         
-        // (2025-05-02 12:21:15) MathJax 렌더링 적용
+        // (2025-05-02 14:24:15) MathJax 렌더링 개선
         if (window.MathJax) {
             try {
-                window.MathJax.typesetPromise([answerDiv]).catch(err => {
-                    console.error('MathJax 렌더링 오류:', err);
-                });
+                // 수식 렌더링 시도
+                window.MathJax.typesetPromise([answerDiv])
+                    .then(() => {
+                        console.log('MathJax 렌더링 완료');
+                    })
+                    .catch(err => {
+                        console.error('MathJax 렌더링 오류:', err);
+                    });
             } catch (e) {
                 console.error('MathJax 처리 중 오류:', e);
+                
+                // 오류 발생 시 fallback 처리
+                setTimeout(() => {
+                    try {
+                        window.MathJax.typeset([answerDiv]);
+                    } catch (e2) {
+                        console.error('MathJax fallback 처리 중 오류:', e2);
+                    }
+                }, 500);
             }
         }
     }

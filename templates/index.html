@@ -25,6 +25,15 @@
           skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
           ignoreHtmlClass: 'tex2jax_ignore',
           processHtmlClass: 'tex2jax_process'
+        },
+        startup: {
+          ready: function() {
+            MathJax.startup.defaultReady();
+            // 페이지 로드 후 모든 수식 처리
+            document.addEventListener('DOMContentLoaded', function() {
+              MathJax.typeset();
+            });
+          }
         }
       };
     </script>

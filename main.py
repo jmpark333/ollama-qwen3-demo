@@ -52,54 +52,61 @@ def process_math_expressions(text):
     if not text:
         return text
     
-    # (2025-05-02 12:23:45) LaTeX 수식 처리 개선
-    import re
-    
-    # 백슬래시 이스케이프 처리를 하지 않고, 수식 기호 내부의 LaTeX 명령어를 그대로 보존
-    
-    # 인라인 수식 처리 ($...$)
-    def preserve_inline_math(match):
-        content = match.group(1)
-        return f'<span class="math-tex">$${content}$$</span>'
-    
-    # 디스플레이 수식 처리 ($$...$$)
-    def preserve_display_math(match):
-        content = match.group(1)
-        return f'<div class="math-tex display-math">$${content}$$</div>'
+    # (2025-05-02 14:25:15) LaTeX 수식 처리 방식 단순화
+    # 백슬래시 명령어 이스케이프 처리
     
     # 특수 LaTeX 명령어 처리
-    def process_special_latex(text):
-        # \boxed{...} 처리
-        def process_boxed(match):
-            content = match.group(1)
-            return f'\\boxed{{{content}}}'
-        
-        # \boxed{...} 명령어 처리
-        text = re.sub(r'\\boxed\{([^}]+)\}', process_boxed, text)
-        
-        # \times 명령어 처리
-        text = text.replace(r'\times', '\\times')
-        
-        # \cdot 명령어 처리
-        text = text.replace(r'\cdot', '\\cdot')
-        
-        # \tag 명령어 처리
-        text = text.replace(r'\tag', '\\tag')
-        
-        # \quad 명령어 처리
-        text = text.replace(r'\quad', '\\quad')
-        
-        # \Rightarrow 명령어 처리
-        text = text.replace(r'\Rightarrow', '\\Rightarrow')
-        
-        return text
+    replacements = {
+        r'\times': '\\times',
+        r'\cdot': '\\cdot',
+        r'\tag': '\\tag',
+        r'\quad': '\\quad',
+        r'\boxed': '\\boxed',
+        r'\Rightarrow': '\\Rightarrow',
+        r'\Leftarrow': '\\Leftarrow',
+        r'\rightarrow': '\\rightarrow',
+        r'\leftarrow': '\\leftarrow',
+        r'\therefore': '\\therefore',
+        r'\because': '\\because',
+        r'\forall': '\\forall',
+        r'\exists': '\\exists',
+        r'\in': '\\in',
+        r'\subset': '\\subset',
+        r'\supset': '\\supset',
+        r'\cup': '\\cup',
+        r'\cap': '\\cap',
+        r'\emptyset': '\\emptyset',
+        r'\infty': '\\infty',
+        r'\partial': '\\partial',
+        r'\nabla': '\\nabla',
+        r'\alpha': '\\alpha',
+        r'\beta': '\\beta',
+        r'\gamma': '\\gamma',
+        r'\delta': '\\delta',
+        r'\epsilon': '\\epsilon',
+        r'\zeta': '\\zeta',
+        r'\eta': '\\eta',
+        r'\theta': '\\theta',
+        r'\iota': '\\iota',
+        r'\kappa': '\\kappa',
+        r'\lambda': '\\lambda',
+        r'\mu': '\\mu',
+        r'\nu': '\\nu',
+        r'\xi': '\\xi',
+        r'\pi': '\\pi',
+        r'\rho': '\\rho',
+        r'\sigma': '\\sigma',
+        r'\tau': '\\tau',
+        r'\upsilon': '\\upsilon',
+        r'\phi': '\\phi',
+        r'\chi': '\\chi',
+        r'\psi': '\\psi',
+        r'\omega': '\\omega',
+    }
     
-    # 특수 LaTeX 명령어 처리 적용
-    text = process_special_latex(text)
-    
-    # 수식 변환 적용 (HTML 태그로 감싸지 않고 그대로 보존)
-    # 디스플레이 수식 ($$...$$)은 그대로 유지
-    # 인라인 수식 ($...$)도 그대로 유지
+    # 수식 명령어 이스케이프 처리
+    for old, new in replacements.items():
+        text = text.replace(old, new)
     
     return text
 
